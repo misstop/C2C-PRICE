@@ -6,6 +6,7 @@ import yaml
 import os
 import pymysql
 import datetime
+from kafka import KafkaProducer
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 from flask_cors import *
@@ -29,6 +30,8 @@ host = x['DATADB']['MYSQL']['HOST']
 username = x['DATADB']['MYSQL']['UNAME']
 pwd = x['DATADB']['MYSQL']['PWD']
 database = x['DATADB']['MYSQL']['DNAME']
+kafka_con = x['QUEUES']['KAFKA']['HOST']
+kafka_topic = x['QUEUES']['KAFKA']['TOPIC']
 
 
 # 数据库连接
@@ -91,8 +94,6 @@ def crawl():
     head = {
         "authorization": "eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiJhMjQxNWUyZi0wYzRjLTQ5MGYtYmY4NS1hYjdiZWQyYzczOWFFVHBtIiwidWlkIjoiUUM2UmgzbEhUWkFYV0NYTzZVRysxQT09Iiwic3ViIjoiMTc1KioqMDkwNSIsInN0YSI6MCwibWlkIjowLCJpYXQiOjE1MzM4NjU0OTgsImV4cCI6MTUzNDQ3MDI5OCwiYmlkIjowLCJkb20iOiJ3d3cub2tleC5jb20iLCJpc3MiOiJva2NvaW4ifQ.VMVt5ehclJiyBv-_o_6nHMUhndyPZBnbiS18j4itmZYJloZks6AtYBm-CxypKm6JnxEaKITWoW4XUHrF5rA6zQ"
     }
-    # producer = KafkaProducer(bootstrap_servers='47.75.116.175:9092', api_version=(0, 10, 1),
-    #                          value_serializer=lambda v: json.dumps(v).encode('utf-8'))
     try:
         res = requests.get(
             'https://www.okex.com/v2/c2c-open/tradingOrders/group?digitalCurrencySymbol=usdt&legalCurrencySymbol=cny&best=1&\
@@ -119,7 +120,21 @@ def crawl():
     logging.info('createTime-----%s' % createTime)
     db = connect_db()   # 连接mysql数据库
     insert_db(db, okexPrice, huobiPrice, createTime)
+    logging.info('insert to database success!!!')
     close_db(db)
+
+    # 增加kafka发送给王楷
+    producer = KafkaProducer(bootstrap_servers=kafka_con, api_version=(0, 10, 1),
+                             value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+    dic = {
+        "huobiPrice": huobiPrice,
+        "key": "USDT,CNY",
+        "timestamp": createTime,
+    }
+    producer.send(kafka_topic, [dic])
+    logging.info('send to kafka success!!!')
+    producer.flush()
+    producer.close()
 
 
 # 从数据库查询
@@ -134,11 +149,12 @@ def select_msg(num):
 # 非阻塞
 SCHEDULER = BackgroundScheduler()
 if __name__ == '__main__':
-    SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
-    SCHEDULER.start()
-    # crawl()
-    app.run(
-        host='0.0.0.0',
-        port=5000, debug=True,
-        use_reloader=False,
-    )
+    # SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
+    # SCHEDULER.start()
+    # app.run(
+    #     host='0.0.0.0',
+    #     port=5000, debug=True,
+    #     use_reloader=False,
+    # )
+    # 测试crawl
+    crawl()
