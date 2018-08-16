@@ -127,7 +127,7 @@ def crawl():
     producer = KafkaProducer(bootstrap_servers=kafka_con, api_version=(0, 10, 1),
                              value_serializer=lambda v: json.dumps(v).encode('utf-8'))
     dic = {
-        "huobiPrice": huobiPrice,
+        "price": huobiPrice,
         "key": "USDT,CNY",
         "timestamp": createTime,
     }
