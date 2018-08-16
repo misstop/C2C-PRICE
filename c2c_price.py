@@ -149,12 +149,11 @@ def select_msg(num):
 # 非阻塞
 SCHEDULER = BackgroundScheduler()
 if __name__ == '__main__':
-    # SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
-    # SCHEDULER.start()
-    # app.run(
-    #     host='0.0.0.0',
-    #     port=5000, debug=True,
-    #     use_reloader=False,
-    # )
-    # 测试crawl
-    crawl()
+    SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
+    SCHEDULER.start()
+    app.run(
+        host='0.0.0.0',
+        port=5000, debug=True,
+        use_reloader=False,
+    )
+    # crawl()
