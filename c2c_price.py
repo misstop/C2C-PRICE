@@ -76,7 +76,7 @@ def query_db(db, num):
         logging.error(e)
     for row in results:
         dic = {
-            'okexPrice': float(row[1]),
+            'okexPrice': row[1],
             'huobiPrice': float(row[2]),
             'timestamp': str(row[3])
         }
@@ -100,10 +100,12 @@ def crawl():
             exchangeRateLevel=0&paySupport=0', headers=head
         )
         details = json.loads(res.text)['data']
+        okexPrice = details["sellTradingOrders"][24]['exchangeRate']
     except Exception as e:
         logging.error(e)
+        okexPrice = None
     # 得到okex的c2c价格
-    okexPrice = details["sellTradingOrders"][24]['exchangeRate']
+    # okexPrice = details["sellTradingOrders"][24]['exchangeRate']
     logging.info('okexPrice-----%s' % okexPrice)
     try:
         res2 = requests.get(
