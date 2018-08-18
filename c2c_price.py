@@ -125,10 +125,10 @@ def crawl():
     ts = time.time()
     createTime = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     logging.info('createTime-----%s' % createTime)
-    db = connect_db()   # 连接mysql数据库
-    insert_db(db, okexPrice, huobiPrice, createTime)
-    logging.info('insert to database success!!!')
-    close_db(db)
+    # db = connect_db()   # 连接mysql数据库
+    # insert_db(db, okexPrice, huobiPrice, createTime)
+    # logging.info('insert to database success!!!')
+    # close_db(db)
 
     # 增加kafka发送给王楷
     producer = KafkaProducer(bootstrap_servers=kafka_con, api_version=(0, 10, 1),
@@ -158,9 +158,9 @@ SCHEDULER = BackgroundScheduler()
 if __name__ == '__main__':
     SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
     SCHEDULER.start()
-    app.run(
-        host='0.0.0.0',
-        port=5000, debug=True,
-        use_reloader=False,
-    )
-    # crawl()
+    # app.run(
+    #     host='0.0.0.0',
+    #     port=5000, debug=True,
+    #     use_reloader=False,
+    # )
+    # # crawl()
