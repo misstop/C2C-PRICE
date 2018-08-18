@@ -66,7 +66,12 @@ def query_db(db, num):
     ls = []
     # 使用cursor()方法获取操作游标
     cursor = db.cursor()
-    sql = "select * from c2c_price ORDER BY createTime desc LIMIT %s" % num
+    if num == "1":
+        sql = "SELECT * FROM c2c_price WHERE createTime >=  NOW() - interval 24 hour"
+    elif num == "3":
+        sql = "SELECT * FROM c2c_price WHERE TO_DAYS( NOW( ) ) - TO_DAYS(createTime) <= 3"
+    else:
+        sql = "SELECT * FROM c2c_price WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) <= date(createTime)"
     try:
         # 执行SQL语句
         cursor.execute(sql)
@@ -76,7 +81,7 @@ def query_db(db, num):
         logging.error(e)
     for row in results:
         dic = {
-            'okexPrice': row[1],
+            'okexPrice': None,
             'huobiPrice': float(row[2]),
             'timestamp': str(row[3])
         }
