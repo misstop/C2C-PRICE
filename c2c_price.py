@@ -62,16 +62,16 @@ def insert_db(db, okexPrice, huobiPrice, createTime):
 
 
 # 查询语句
-def query_db(db, num):
-    ls = []
+def query_db(db,):
+    ls1 = []
+    ls2 = []
+    ls3 = []
+
     # 使用cursor()方法获取操作游标
     cursor = db.cursor()
-    if num == "1":
-        sql = "SELECT * FROM c2c_price WHERE createTime >=  NOW() - interval 24 hour"
-    elif num == "3":
-        sql = "SELECT * FROM c2c_price WHERE TO_DAYS( NOW( ) ) - TO_DAYS(createTime) <= 3"
-    else:
-        sql = "SELECT * FROM c2c_price WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) <= date(createTime)"
+
+    # 1天
+    sql = "SELECT * FROM c2c_price WHERE createTime >=  NOW() - interval 24 hour"
     try:
         # 执行SQL语句
         cursor.execute(sql)
@@ -79,15 +79,59 @@ def query_db(db, num):
         results = cursor.fetchall()
     except Exception as e:
         logging.error(e)
+        ls1 = None
     for row in results:
-        dic = {
+        dic1 = {
             'okexPrice': None,
             'huobiPrice': float(row[2]),
             'timestamp': str(row[3])
         }
-        ls.append(dic)
-    logging.info(ls)
-    return ls
+        ls1.append(dic1)
+    logging.info(ls1)
+
+    # 3天
+    sql = "SELECT * FROM c2c_price WHERE TO_DAYS( NOW( ) ) - TO_DAYS(createTime) <= 3"
+    try:
+        # 执行SQL语句
+        cursor.execute(sql)
+        # 获取所有记录列表
+        results = cursor.fetchall()
+    except Exception as e:
+        logging.error(e)
+        ls2 = None
+    for row in results:
+        dic2 = {
+            'okexPrice': None,
+            'huobiPrice': float(row[2]),
+            'timestamp': str(row[3])
+        }
+        ls2.append(dic2)
+    logging.info(ls2)
+
+    # 7天
+    sql = "SELECT * FROM c2c_price WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) <= date(createTime)"
+    try:
+        # 执行SQL语句
+        cursor.execute(sql)
+        # 获取所有记录列表
+        results = cursor.fetchall()
+    except Exception as e:
+        logging.error(e)
+        ls3 = None
+    for row in results:
+        dic3 = {
+            'okexPrice': None,
+            'huobiPrice': float(row[2]),
+            'timestamp': str(row[3])
+        }
+        ls3.append(dic3)
+    logging.info(ls3)
+    dic = {
+        "1day": ls1,
+        "3day": ls2,
+        "7day": ls3
+    }
+    return dic
 
 
 # 关闭数据库
@@ -125,10 +169,10 @@ def crawl():
     ts = time.time()
     createTime = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     logging.info('createTime-----%s' % createTime)
-    # db = connect_db()   # 连接mysql数据库
-    # insert_db(db, okexPrice, huobiPrice, createTime)
-    # logging.info('insert to database success!!!')
-    # close_db(db)
+    db = connect_db()   # 连接mysql数据库
+    insert_db(db, okexPrice, huobiPrice, createTime)
+    logging.info('insert to database success!!!')
+    close_db(db)
 
     # 增加kafka发送给王楷
     producer = KafkaProducer(bootstrap_servers=kafka_con, api_version=(0, 10, 1),
@@ -145,22 +189,22 @@ def crawl():
 
 
 # 从数据库查询
-@app.route('/row/<num>/', methods=["GET"])
-def select_msg(num):
+@app.route('/row/all/', methods=["GET"])
+def select_msg():
     # 使用cursor()方法获取操作游标
     db = connect_db()
-    ls = query_db(db, num)
+    dic = query_db(db)
     close_db(db)
-    return jsonify(ls)
+    return jsonify(dic)
 
 # 非阻塞
 SCHEDULER = BackgroundScheduler()
 if __name__ == '__main__':
     SCHEDULER.add_job(func=crawl, trigger='interval', minutes=5)
     SCHEDULER.start()
-    # app.run(
-    #     host='0.0.0.0',
-    #     port=5000, debug=True,
-    #     use_reloader=False,
-    # )
+    app.run(
+        host='0.0.0.0',
+        port=5000, debug=True,
+        use_reloader=False,
+    )
     # # crawl()
