@@ -61,6 +61,15 @@ def insert_db(db, okexPrice, huobiPrice, createTime):
         db.rollback()
 
 
+# 减少折线统计图的密度
+def line(ls, num):
+    ls_details = []
+    for _ in ls:
+        if ls.index(_) % num == 0:
+            ls_details.append(_)
+    return ls_details
+
+
 # 查询语句
 def query_db(db,):
     ls1 = []
@@ -87,7 +96,8 @@ def query_db(db,):
             'timestamp': str(row[3])
         }
         ls1.append(dic1)
-    logging.info(ls1)
+    line1 = line(ls1, 6)
+    logging.info('1day line1 ok')
 
     # 3天
     sql = "SELECT * FROM c2c_price WHERE TO_DAYS( NOW( ) ) - TO_DAYS(createTime) <= 3"
@@ -106,7 +116,8 @@ def query_db(db,):
             'timestamp': str(row[3])
         }
         ls2.append(dic2)
-    logging.info(ls2)
+    line2 = line(ls2, 18)
+    logging.info('3day line2 ok')
 
     # 7天
     sql = "SELECT * FROM c2c_price WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) <= date(createTime)"
@@ -125,11 +136,12 @@ def query_db(db,):
             'timestamp': str(row[3])
         }
         ls3.append(dic3)
-    logging.info(ls3)
+    line3 = line(ls3, 42)
+    logging.info('7day line3 ok')
     dic = {
-        "1day": ls1,
-        "3day": ls2,
-        "7day": ls3
+        "1day": line1,
+        "3day": line2,
+        "7day": line3
     }
     return dic
 
